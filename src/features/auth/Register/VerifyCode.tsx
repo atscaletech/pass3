@@ -31,8 +31,14 @@ const VerifyWrapper = styled(Box)`
   }
 `;
 
-const VerifyEmail = ({ goToEnterEmail }: { goToEnterEmail: () => void }) => {
-  const { verifyCodeLoading, onVerifyCode } = useVerifyCode();
+const VerifyEmail = ({
+  goToEnterEmail,
+  goToCreateWallet,
+}: {
+  goToEnterEmail: () => void;
+  goToCreateWallet: () => void;
+}) => {
+  const { verifyCodeLoading, onVerifyCode } = useVerifyCode(goToCreateWallet);
   const [code, setCode] = useState('');
 
   const handleOnChange = (val: any) => {

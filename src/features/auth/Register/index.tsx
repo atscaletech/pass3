@@ -21,6 +21,9 @@ const Register = () => {
       {step === REGISTER_STEPS.VERIFY_CODE && (
         <VerifyCode
           goToEnterEmail={() => setStep(REGISTER_STEPS.ENTER_EMAIL)}
+          goToCreateWallet={() => {
+            setStep(REGISTER_STEPS.CREATE_WALLET);
+          }}
         />
       )}
       {step === REGISTER_STEPS.CREATE_WALLET && <CreateWallet />}

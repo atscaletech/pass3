@@ -1,6 +1,24 @@
 import { Box, Typography, Button, CircularProgress } from '@mui/material';
+import { createKey, getKeys } from 'fastAuth';
+import { useValidateEmail } from '../hooks';
 
 const CreateWallet = () => {
+  const { validateEmailSuccess } = useValidateEmail();
+  const onCreateKey = async () => {
+    if (validateEmailSuccess) {
+      const keyPair = await createKey(validateEmailSuccess);
+      console.log(keyPair);
+    }
+  };
+
+  const onGetPasskeys = async () => {
+    if (validateEmailSuccess) {
+      const keys = await getKeys(validateEmailSuccess);
+
+      console.log('keys', keys);
+    }
+  };
+
   return (
     <Box sx={{ paddingTop: 10 }}>
       <Typography
@@ -16,9 +34,20 @@ const CreateWallet = () => {
         stored on your devices and will never be shared with anyone.
       </Typography>
 
-      <Button style={{ marginTop: 40, width: '100%' }} variant='contained'>
+      <Button
+        onClick={onCreateKey}
+        style={{ marginTop: 40, width: '100%' }}
+        variant='contained'>
         {false && <CircularProgress size={16} style={{ marginRight: 10 }} />}
         Create wallet
+      </Button>
+
+      <Button
+        onClick={onGetPasskeys}
+        style={{ marginTop: 40, width: '100%' }}
+        variant='contained'>
+        {false && <CircularProgress size={16} style={{ marginRight: 10 }} />}
+        Get Passkeys
       </Button>
     </Box>
   );

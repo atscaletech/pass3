@@ -1,7 +1,7 @@
 import { createSlice, Reducer, createAction } from '@reduxjs/toolkit';
 import { createAppAsyncThunk } from 'app/hooks';
 import authAPI from './authAPI';
-import { AuthState, ValidateEmailState, VerifyCodeState } from './types';
+import { AuthState } from './types';
 import { RootState } from 'app/store';
 
 const initialState: AuthState = {
@@ -63,20 +63,6 @@ export const authSlice = createSlice({
   },
 });
 
-export const selectValidateEmailState = ({
-  auth: { validateEmailLoading, validateEmailSuccess, validateEmailFailed },
-}: RootState): ValidateEmailState => ({
-  validateEmailLoading,
-  validateEmailSuccess,
-  validateEmailFailed,
-});
-
-export const selectVerifyCodeState = ({
-  auth: { verifyCodeLoading, verifyCodeSuccess, verifyCodeFailed },
-}: RootState): VerifyCodeState => ({
-  verifyCodeLoading,
-  verifyCodeSuccess,
-  verifyCodeFailed,
-});
+export const selectAuthState = ({ auth }: RootState) => auth;
 
 export default authSlice.reducer as Reducer<AuthState>;

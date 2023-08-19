@@ -23,12 +23,7 @@ export const useSuccess: ReactToResult = (success, customMess, callback) => {
   const messageApi = useContext(NotifyContext);
   const isMounted = useRef<any>(null);
 
-  useEffect(()=>{
-    console.log('success change',success)
-  },[success])
-
   useEffect(() => {
-    console.log('isMounted.current',isMounted.current)
     if (!isMounted.current) {
       isMounted.current = true;
     } else {
