@@ -16,7 +16,9 @@ import {
   recoverPublicKey,
 } from './utils';
 import { Fido2 } from './fido2';
-import { AssertionResponse } from './index.d';
+import { AssertionResponse } from 'types/index';
+import { base64url } from 'utils/base64url';
+import localDb from 'utils/localDb';
 
 const CHALLENGE_TIMEOUT_MS = 90 * 1000;
 const RP_NAME = 'PASS3_API_JS_WEBAUTHN';
@@ -36,13 +38,20 @@ function setBufferIfUndefined() {
   }
 }
 
-export const createKey = async (username: string): Promise<KeyPair> => {
+type GetKeyResponse = {
+  keyPair?: KeyPair;
+  username: string;
+  walletPublicKey: string;
+};
+
+export const createKey = async (username: string): Promise<GetKeyResponse> => {
   const cleanUserName = validateUsername(username);
   if (!f2l.hasInit) {
     await init();
   }
 
   const id = base64.fromString(cleanUserName, true);
+
   const challengeMakeCred = await f2l.registration({
     username: cleanUserName,
     displayName: cleanUserName,
@@ -51,21 +60,32 @@ export const createKey = async (username: string): Promise<KeyPair> => {
 
   const publicKey = preformatMakeCredReq(challengeMakeCred);
 
-  console.log('publicKey creating', publicKey);
+  const reformatedPublickey = {
+    ...publicKey,
+    authenticatorSelection: {
+      ...publicKey.authenticatorSelection,
+      userVerification: 'preferred',
+    },
+
+    extensions: { credProps: true },
+  };
+
+  const userCredentialId = localDb.getUserCredentialId(cleanUserName);
+
+  if (userCredentialId) {
+    reformatedPublickey.excludeCredentials = [
+      {
+        id: base64url.decode(userCredentialId),
+        type: 'public-key',
+        transports: ['internal', 'hybrid'],
+      },
+    ];
+  }
+
   setBufferIfUndefined();
   return navigator.credentials
     .create({
-      publicKey: {
-        ...publicKey,
-        excludeCredentials: [
-          {
-            id: Buffer.from('gfviLLpapHAeSwMAVOgXXkHPLT909Vpv7wuQmUvZj_E'),
-            type: 'public-key',
-            transports: ['internal', 'hybrid'],
-          },
-        ],
-        extensions: { credProps: true },
-      },
+      publicKey: reformatedPublickey,
     })
     .then(async res => {
       const result = await f2l.attestation({
@@ -73,6 +93,10 @@ export const createKey = async (username: string): Promise<KeyPair> => {
         origin,
         challenge: challengeMakeCred.challenge,
       });
+
+      if (res?.id) {
+        localDb.setUserCredentialId(cleanUserName, res.id);
+      }
 
       const publicKey = result.authnrData.get('credentialPublicKeyPem');
       const publicKeyBytes = get64BytePublicKeyFromPEM(publicKey);
@@ -89,38 +113,83 @@ export const createKey = async (username: string): Promise<KeyPair> => {
         res,
         origin,
       });
-      return KeyPair.fromString(
+
+      const keyPair = KeyPair.fromString(
         baseEncode(
           new Uint8Array(
             Buffer.concat([key.getSecret(), Buffer.from(key.getPublic())]),
           ),
         ),
       );
+
+      const address = base64url.encode(keyPair.getPublicKey().data);
+
+      localDb.setWalletPublicKey(username, address);
+
+      return {
+        walletPublicKey: base64url.encode(keyPair.getPublicKey().data),
+        username,
+      };
+    })
+    .catch(err => {
+      alert(err);
     });
 };
 
 // Ecrecover returns two possible public keys for a given signature
 export const getKeys = async (
   username: string,
-): Promise<[KeyPair, KeyPair]> => {
+  abortController?: AbortController,
+): Promise<GetKeyResponse> => {
   const cleanUserName = validateUsername(username);
 
   if (!f2l.hasInit) {
     await init();
   }
   const assertionOptions = await f2l.login();
-  const options = {
+  const options: any = {
     ...assertionOptions,
     username: cleanUserName,
     allowCredentials: [],
   };
 
+  const hasUserName = username !== '';
+
+  if (hasUserName) {
+    const userCredentialId = localDb.getUserCredentialId(cleanUserName);
+
+    if (!userCredentialId) {
+      console.error('No account found');
+      return { username: '', walletPublicKey: '' };
+    }
+
+    options.allowCredentials = [{ id: userCredentialId, type: 'public-key' }];
+  }
+
   const publicKey = preformatGetAssertReq(options);
 
   setBufferIfUndefined();
+
+  const reformatedPublickey = {
+    ...publicKey,
+    userVerification: 'preferred',
+  };
+
+  console.log('reformatedPublickey', reformatedPublickey);
+
+  const credentialOptions: any = {
+    publicKey: reformatedPublickey,
+  };
+
+  if (!hasUserName) {
+    credentialOptions.mediation = 'conditional';
+    credentialOptions.signal = abortController?.signal;
+  }
+
   return navigator.credentials
-    .get({ publicKey: { ...publicKey, userVerification: 'preferred' } })
+    .get(credentialOptions)
     .then(async (response: any) => {
+      console.log('response', response);
       const getAssertionResponse: AssertionResponse =
         publicKeyCredentialToJSON(response);
       const signature = base64.toArrayBuffer(
@@ -191,6 +260,21 @@ export const getKeys = async (
           ),
         ),
       );
-      return [firstKeyPair, secondKeyPair];
+
+      const { id: credentialId } = response;
+
+      const username = localDb.getUserNameByCredentialId(credentialId);
+      const walletPublicKey = localDb.getWalletPublicKey(username);
+
+      const realKey = [firstKeyPair, secondKeyPair].find(
+        key => base64url.encode(key.getPublicKey().data) === walletPublicKey,
+      );
+
+      const keyResponse: GetKeyResponse = {
+        keyPair: realKey,
+        username,
+        walletPublicKey,
+      };
+      return keyResponse;
     });
 };

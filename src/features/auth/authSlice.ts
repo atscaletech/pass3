@@ -12,6 +12,9 @@ const initialState: AuthState = {
   verifyCodeLoading: false,
   verifyCodeSuccess: undefined,
   verifyCodeFailed: undefined,
+
+  username: '',
+  walletPublicKey: '',
 };
 
 export const validateEmail = createAppAsyncThunk(
@@ -43,7 +46,12 @@ export const resetStore = createAction('RESET_STORE');
 export const authSlice = createSlice({
   name: 'auth',
   initialState,
-  reducers: {},
+  reducers: {
+    setUserInfo(state, { payload }) {
+      state.username = payload.username;
+      state.walletPublicKey = payload.walletPublicKey;
+    },
+  },
   extraReducers: builder => {
     builder
       .addCase(validateEmail.pending, state => {
@@ -64,5 +72,7 @@ export const authSlice = createSlice({
 });
 
 export const selectAuthState = ({ auth }: RootState) => auth;
+
+export const { setUserInfo } = authSlice.actions;
 
 export default authSlice.reducer as Reducer<AuthState>;

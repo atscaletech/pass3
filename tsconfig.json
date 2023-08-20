@@ -17,6 +17,6 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src","asn1-parser.d.ts"],
+  "include": ["src", "asn1-parser.d.ts"],
   "exclude": ["src/fastAuth"]
 }

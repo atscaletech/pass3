@@ -7,5 +7,5 @@ export const validateEmailPattern = (email: string) => {
 };
 
 export const getCleanEmail = (email: string) => {
-  return email.replace(/ /g, '');
+  return email.toLocaleLowerCase().replace(/ /g, '');
 };

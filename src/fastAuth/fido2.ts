@@ -28,6 +28,7 @@ export class Fido2 {
       name: username,
       displayName: displayName,
     };
+
     const challenge = base64.fromArrayBuffer(
       registrationOptions.challenge,
       true,

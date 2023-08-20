@@ -7,45 +7,47 @@ import {
   Checkbox,
   Button,
   CircularProgress,
+  useMediaQuery,
 } from '@mui/material';
 import styled from '@emotion/styled';
-import { Link } from 'react-router-dom';
+import { StyledLink } from 'components/common/Styled';
 import PATHS from 'router/paths';
 import { useValidateEmail } from '../hooks';
-import { getCleanEmail, validateEmailPattern } from 'utils/validator';
-
-const StyledFormControlLabel = styled(FormControlLabel)`
-  margin-top: -5px;
-
-  .agree-text {
-    margin-top: 24px;
-  }
-`;
+import { useEmailInput } from 'app/hooks';
 
 const StyledButton = styled(Button)`
   width: 100%;
   margin-top: 40px;
 `;
 
+const StyledCustomFormItem = styled(Box)`
+  .custom-form-item-label {
+    padding-bottom: 10px;
+    display: block;
+  }
+
+  .Mui-error {
+    margin-left: 0 !important;
+  }
+`;
+
 const EnterEmail = ({ goToVerify }: { goToVerify: () => void }) => {
   const { onValidateEmail, validateEmailSuccess, validateEmailLoading } =
     useValidateEmail(goToVerify);
+  const { email, isEmailError, onEmailChange, cleanEmail, validateEmailInput } =
+    useEmailInput(validateEmailSuccess);
 
-  const [email, setEmail] = useState(validateEmailSuccess || '');
-  const [isEmailError, setIsEmailError] = useState(false);
   const [agreedTerm, setAgreedTerm] = useState(false);
 
-  const isDisableContinue = !email || !agreedTerm;
-
   const handleSubmit = () => {
-    const cleanEmail = getCleanEmail(email);
-    const isEmail = !!validateEmailPattern(cleanEmail);
-    setIsEmailError(!isEmail);
-
+    const isEmail = validateEmailInput(email);
     if (isEmail) {
       onValidateEmail(cleanEmail);
     }
   };
+
+  const isDisableContinue = !email || !agreedTerm;
+  const isDesktop = useMediaQuery('(min-width:600px)');
 
   return (
     <Box sx={{ paddingTop: 10 }}>
@@ -57,23 +59,33 @@ const EnterEmail = ({ goToVerify }: { goToVerify: () => void }) => {
         Create account
       </Typography>
 
-      <TextField
-        autoComplete='off'
-        value={email}
-        type='email'
-        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-          setEmail(event.target.value);
-        }}
-        style={{ width: '100%', marginTop: 40 }}
-        label='Email Address'
-        variant='outlined'
-        required
-        error={isEmailError}
-        helperText={isEmailError && 'Email invalid!'}
-        disabled={validateEmailLoading}
-      />
+      <StyledCustomFormItem mt={5} display='block'>
+        <label
+          className='custom-form-item-label'
+          style={{
+            color: isEmailError ? '#d32f2f' : 'rgba(0, 0, 0, 0.6)',
+          }}>
+          Email
+        </label>
 
-      <StyledFormControlLabel
+        <TextField
+          fullWidth
+          autoComplete='off'
+          value={email}
+          type='email'
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+            onEmailChange(event.target.value);
+          }}
+          variant='outlined'
+          required
+          error={isEmailError}
+          helperText={isEmailError && 'Email invalid!'}
+          disabled={validateEmailLoading}
+        />
+      </StyledCustomFormItem>
+
+      <FormControlLabel
+        style={{ marginTop: isDesktop ? 25 : -5 }}
         control={
           <Checkbox
             checked={agreedTerm}
@@ -81,11 +93,11 @@ const EnterEmail = ({ goToVerify }: { goToVerify: () => void }) => {
           />
         }
         label={
-          <Typography className='agree-text'>
+          <Typography style={{ marginTop: isDesktop ? 0 : 25 }}>
             I agree to the <strong>Term Of Service</strong> and{' '}
             <strong>Privacy Policy</strong>
           </Typography>
-        }></StyledFormControlLabel>
+        }></FormControlLabel>
 
       <StyledButton
         onClick={handleSubmit}
@@ -97,18 +109,13 @@ const EnterEmail = ({ goToVerify }: { goToVerify: () => void }) => {
         Continue
       </StyledButton>
 
-      <Link
+      <StyledLink
         style={{
-          color: '#1976d2',
-          textAlign: 'center',
-          width: '100%',
           marginTop: 30,
-          display: 'block',
-          fontWeight: 700,
         }}
         to={PATHS.auth.signIn}>
         Sign In
-      </Link>
+      </StyledLink>
 
       <Typography
         variant='body2'

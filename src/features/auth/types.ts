@@ -10,4 +10,12 @@ export interface VerifyCodeState {
   verifyCodeFailed?: string;
 }
 
-export interface AuthState extends ValidateEmailState, VerifyCodeState {}
+export interface UserInfo {
+  username: string;
+  walletPublicKey: string;
+}
+
+export interface AuthState
+  extends ValidateEmailState,
+    VerifyCodeState,
+    UserInfo {}

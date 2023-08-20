@@ -1,7 +1,8 @@
-import { createContext, useContext, useRef, useEffect } from 'react';
+import { createContext, useContext, useRef, useEffect, useState } from 'react';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from './store';
 import { createAsyncThunk } from '@reduxjs/toolkit';
+import { getCleanEmail, validateEmailPattern } from 'utils/validator';
 
 export const NotifyContext = createContext<any>({});
 
@@ -64,4 +65,31 @@ export const useFailed: ReactToResult = (error, customMess, callback) => {
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [error]);
+};
+
+export const useEmailInput = (initEmail?: string) => {
+  const [email, setEmail] = useState(initEmail || '');
+  const [isEmailError, setIsEmailError] = useState(false);
+
+  const validateEmailInput = (email: string) => {
+    const cleanEmail = getCleanEmail(email);
+    const isEmail = !!validateEmailPattern(cleanEmail);
+    setIsEmailError(!isEmail);
+    return isEmail;
+  };
+
+  const onEmailChange = (value: string) => {
+    setEmail(value);
+    if (isEmailError) {
+      validateEmailInput(value);
+    }
+  };
+
+  return {
+    email,
+    cleanEmail: getCleanEmail(email),
+    onEmailChange,
+    isEmailError,
+    validateEmailInput
+  };
 };

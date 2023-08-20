@@ -33,9 +33,9 @@ export const get64BytePublicKeyFromPEM = (publicKey: PublicKey) => {
 };
 
 export const validateUsername = (name: string): string => {
-  if (!name) {
-    throw new Error('username is required');
-  }
+  // if (!name) {
+  //   throw new Error('username is required');
+  // }
   return name;
 };
 
